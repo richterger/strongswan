@@ -170,6 +170,7 @@ ARG_ENABL_SET([eap-tnc],        [enable EAP TNC trusted network connect module.]
 ARG_ENABL_SET([eap-dynamic],    [enable dynamic EAP proxy module.])
 ARG_ENABL_SET([eap-radius],     [enable RADIUS proxy authentication module.])
 ARG_DISBL_SET([xauth-generic],  [disable generic XAuth backend.])
+ARG_DISBL_SET([xauth-radius],   [disable radius XAuth backend.])
 ARG_ENABL_SET([xauth-eap],      [enable XAuth backend using EAP methods to verify passwords.])
 ARG_ENABL_SET([xauth-pam],      [enable XAuth backend using PAM to verify passwords.])
 ARG_ENABL_SET([xauth-noauth],   [enable XAuth pseudo-backend that does not actually verify or even request any credentials.])
@@ -303,6 +304,10 @@ fi
 
 if test x$xauth_generic_given = xfalse -a x$ikev1 = xfalse; then
 	xauth_generic=false;
+fi
+
+if test x$xauth_radius_given = xfalse -a x$ikev1 = xfalse; then
+	xauth_radius=false;
 fi
 
 if test x$eap_aka_3gpp2 = xtrue; then
@@ -1022,6 +1027,7 @@ ADD_PLUGIN([eap-ttls],             [c charon nm cmd])
 ADD_PLUGIN([eap-peap],             [c charon nm cmd])
 ADD_PLUGIN([eap-tnc],              [c charon])
 ADD_PLUGIN([xauth-generic],        [c charon cmd])
+ADD_PLUGIN([xauth-radius],         [c charon cmd])
 ADD_PLUGIN([xauth-eap],            [c charon])
 ADD_PLUGIN([xauth-pam],            [c charon])
 ADD_PLUGIN([xauth-noauth],         [c charon])
@@ -1167,6 +1173,7 @@ AM_CONDITIONAL(USE_EAP_TNC, test x$eap_tnc = xtrue)
 AM_CONDITIONAL(USE_EAP_DYNAMIC, test x$eap_dynamic = xtrue)
 AM_CONDITIONAL(USE_EAP_RADIUS, test x$eap_radius = xtrue)
 AM_CONDITIONAL(USE_XAUTH_GENERIC, test x$xauth_generic = xtrue)
+AM_CONDITIONAL(USE_XAUTH_RADIUS, test x$xauth_radius = xtrue)
 AM_CONDITIONAL(USE_XAUTH_EAP, test x$xauth_eap = xtrue)
 AM_CONDITIONAL(USE_XAUTH_PAM, test x$xauth_pam = xtrue)
 AM_CONDITIONAL(USE_XAUTH_NOAUTH, test x$xauth_noauth = xtrue)
@@ -1369,6 +1376,7 @@ AC_CONFIG_FILES([
 	src/libcharon/plugins/eap_tnc/Makefile
 	src/libcharon/plugins/eap_radius/Makefile
 	src/libcharon/plugins/xauth_generic/Makefile
+	src/libcharon/plugins/xauth_radius/Makefile
 	src/libcharon/plugins/xauth_eap/Makefile
 	src/libcharon/plugins/xauth_pam/Makefile
 	src/libcharon/plugins/xauth_noauth/Makefile

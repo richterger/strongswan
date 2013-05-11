@@ -583,6 +583,13 @@ if MONOLITHIC
 endif
 endif
 
+if USE_XAUTH_RADIUS
+  SUBDIRS += plugins/xauth_radius
+if MONOLITHIC
+  libcharon_la_LIBADD += plugins/xauth_radius/libstrongswan-xauth-radius.la
+endif
+endif
+
 if USE_XAUTH_EAP
   SUBDIRS += plugins/xauth_eap
 if MONOLITHIC
