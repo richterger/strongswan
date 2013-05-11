@@ -65,6 +65,11 @@ struct private_radius_message_t {
 	 * message data, allocated
 	 */
 	rmsg_t *msg;
+
+	/**
+	 * user_password, if any
+	 */
+	chunk_t user_password;
 };
 
 /**
@@ -356,6 +361,12 @@ METHOD(radius_message_t, add, void,
 {
 	rattr_t *attribute;
 
+        if (type == RAT_USER_PASSWORD && this->user_password.len == 0)
+        {
+            this->user_password = data ;
+            return ;
+        }
+
 	data.len = min(data.len, MAX_RADIUS_ATTRIBUTE_SIZE);
 	this->msg = realloc(this->msg,
 						ntohs(this->msg->length) + sizeof(rattr_t) + data.len);
@@ -364,6 +375,55 @@ METHOD(radius_message_t, add, void,
 	attribute->length = data.len + sizeof(rattr_t);
 	memcpy(attribute->value, data.ptr, data.len);
 	this->msg->length = htons(ntohs(this->msg->length) + attribute->length);
+}
+
+/**
+ * Encrypt a Password
+ */
+static chunk_t encrypt_passwd(private_radius_message_t *this, chunk_t C, chunk_t secret, hasher_t *hasher)
+{
+	chunk_t P, seed;
+	u_char *c, *p;
+        size_t n ;
+	/**
+	 * From RFC2865 (encryption):
+	 * b1 = MD5(S + RA)       c(1) = p1 xor b1
+         * b2 = MD5(S + c(1))     c(2) = p2 xor b2
+         *      .                       .
+         * bi = MD5(S + c(i-1))   c(i) = pi xor bi
+	 */
+
+	n = HASH_SIZE_MD5 - (C.len % HASH_SIZE_MD5) ;
+        if (n < HASH_SIZE_MD5)
+        {
+            C = chunk_create_clone (calloc (1, C.len + n), C) ;
+            C.len += n ;
+        }
+
+	seed = chunk_create(this->msg->authenticator, HASH_SIZE_MD5);
+	P = chunk_alloca(C.len);
+	p = P.ptr;
+	c = C.ptr;
+
+	while (c < C.ptr + C.len)
+	{
+		/* b(i) = MD5(S + c(i-1)) */
+		if (!hasher->get_hash(hasher, secret, NULL) ||
+			!hasher->get_hash(hasher, seed, p))
+		{
+			return chunk_empty;
+		}
+
+		/* p(i) = b(i) xor c(1) */
+		memxor(p, c, HASH_SIZE_MD5);
+
+		/* prepare next round */
+		seed = chunk_create(c, HASH_SIZE_MD5);
+		c += HASH_SIZE_MD5;
+		p += HASH_SIZE_MD5;
+	}
+
+	return chunk_clone(P);
 }
 
 METHOD(radius_message_t, sign, bool,
@@ -391,7 +451,12 @@ METHOD(radius_message_t, sign, bool,
 		}
 	}
 
-	if (msg_auth)
+        if (this->user_password.len > 0)
+        {
+           add (this, RAT_USER_PASSWORD, encrypt_passwd(this, this->user_password, secret, hasher)) ;
+        }
+
+        if (msg_auth)
 	{
 		char buf[HASH_SIZE_MD5];
 
@@ -565,6 +630,7 @@ static private_radius_message_t *radius_message_create_empty()
 			.verify = _verify,
 			.destroy = _destroy,
 		},
+                .user_password = chunk_empty,
 	);
 
 	return this;
