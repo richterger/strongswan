@@ -19,3 +19,8 @@ allows to specify an ID as @@<id> to force ID_USER_FQDN, instead of ID_FQDN
 
 Example: leftid="@@my-id"                             
 
+
+##LICENSE
+
+All patches are published under the same license as strongswan itself (GPL V2 or later).
+See LICENSE file for details.
