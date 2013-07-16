@@ -1008,6 +1008,17 @@ identification_t *identification_create_from_string(char *string)
 									chunk_create(string, strlen(string)), NULL);
 				return &this->public;
 			}
+                        else if (*(string + 1) == '@')
+                        {
+                                this = identification_create(ID_USER_FQDN);
+                                string += 2;
+                                this->encoded.len = strlen(string);
+                                if (this->encoded.len)
+                                {       /* if we only got an @@ */
+                                       this->encoded.ptr = strdup(string);
+                                }
+                                return &this->public;
+                        }
 			else
 			{
 				this = identification_create(ID_FQDN);
